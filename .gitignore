@@ -1,52 +1,38 @@
-# Prerequisites
-*.d
+# Ignoring files according to http://microchip.wikidot.com/faq:72
+build/
+dist/
+#Ingoring private Makefiles, to create them open the MPLAB IDE or use the C:\Program Files (x86)\Microchip\MPLABX\<VERSION>\mplab_ide\bin\prjMakefilesGenerator.bat script
+nbproject/Makefile-*
+nbproject/Package-*
+nbproject/private/
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+# Various Altium files
+*.PrjPCBStructure
+*.SchDocPreview
+*.PcbDocPreview
+__Previews
+*.PrjPcbStructure
+*.Dat
+*.REP 
+*.TLT
+*.LOG
+*.log
+*.htm
+*.$$$
 
-# Linker output
-*.ilk
-*.map
-*.exp
+#useless dirs
+Project\ Outputs
+Project\ Logs
 
-# Precompiled Headers
-*.gch
-*.pch
+#History
+History
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+#Exports, but not manual ones
+exports/*
+!exports/manual
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
-
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+#Python stuff
+scripts/__pycache__/
+*.bak
+*.dwl
+*.dwl2

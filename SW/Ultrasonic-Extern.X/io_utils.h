@@ -20,12 +20,6 @@ static inline uint8_t GetDigit(float number, uint8_t pos)
     return ((int)number / (int)pow(10, pos)) % 10;
 }
 
-//convert the measured distance to a str for display on the LCD
-void DistanceToStr(uint16_t distance, char* out_str);
-
-//convert the measured temperature to a str for display on the LCD
-void TemperatureToStr(int8_t temperature, char* out_str);
-
 //calculate the distance (in mm) from the echo return time (in us), and the temperature (in Celsius)
 uint16_t CalcDistance(uint16_t bounce_time_us, float temperature_c);
 

@@ -1,6 +1,7 @@
 #include "io_utils.h"
 #include "xc.h"
 #include <math.h>
+#include <stdint.h>
 
 
 void DistanceToStr(uint16_t distance, char* out_str)

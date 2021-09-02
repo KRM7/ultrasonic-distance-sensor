@@ -51,7 +51,6 @@ int main(void)
 
     while (1)
     {     
-        //send trigger
         signal_sent = false;
         TriggerPulse();
         __delay_ms(60);
@@ -113,7 +112,9 @@ void Init(void)
     CN_SetInterruptHandler(IO_InterruptHandler);
 }
 
-void IO_InterruptHandler(void){ //ultrasonic sensor, radio, button interrupts are handled here
+//ultrasonic sensor, radio, button interrupts are handled here
+void IO_InterruptHandler(void)
+{
     
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;

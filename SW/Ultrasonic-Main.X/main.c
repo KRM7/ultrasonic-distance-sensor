@@ -93,7 +93,8 @@ int main(void)
         TriggerPulse();
         __delay_ms(60);
         
-        if(SIGNAL && TIME < 40000){
+        if(SIGNAL && TIME < 40000)
+        {
             //transmit mode
             radio_mode = MODE_TX;
             RF_SetMode(MODE_TX);

@@ -1,6 +1,4 @@
-/* 
-MRF89XAM8A radio transceiver module functions
- */
+//MRF89XAM8A radio transceiver module functions
  
 #ifndef MRF89XAM8A_H
 #define	MRF89XAM8A_H
@@ -53,9 +51,11 @@ typedef enum {
 } RF_MODE;
 
 
-void RF_WriteConfigRegister(uint8_t address, uint8_t value){   
+//set the radio module one of the radio module's register to a value.
+void RF_WriteConfigRegister(uint8_t address, uint8_t value)
+{   
     //address format: 00AAAAA0
-    address = address << 0b1;
+    address = address << 1;
     address = address & 0b00111110;
     
     nCSCON_SetLow();
@@ -64,9 +64,11 @@ void RF_WriteConfigRegister(uint8_t address, uint8_t value){
     nCSCON_SetHigh();
 }
 
-uint8_t RF_ReadConfigRegister(uint8_t address){
+//read the value of one of the radio module's registers
+uint8_t RF_ReadConfigRegister(uint8_t address)
+{
     //address format: 01AAAAA0
-    address = address << 0b1;
+    address = address << 1;
     address = address & 0b00111110;
     address = address | 0b01000000;
     
@@ -78,14 +80,18 @@ uint8_t RF_ReadConfigRegister(uint8_t address){
     return value;
 }
 
-void RF_WriteTransmitFIFO(uint8_t data){
+//write 8 bit data to the transmit FIFO of the radio module
+void RF_WriteTransmitFIFO(uint8_t data)
+{
     //write 8 bit data to FIFO
     nCS_SetLow();
     SPI1_Exchange8bit(data);
     nCS_SetHigh();
 }
 
-uint8_t RF_ReadReceiveFIFO(void){
+//read 8 bits of data from the receive FIFO of the radio module
+uint8_t RF_ReadReceiveFIFO(void)
+{
     //read 8 bit data from FIFO
     nCS_SetLow();
     uint8_t data = SPI1_Exchange8bit(0x00);
@@ -94,7 +100,9 @@ uint8_t RF_ReadReceiveFIFO(void){
     return data;
 }
 
-void RF_Initialize(void){
+//initialize the radio module
+void RF_Initialize(void)
+{
     //General config registers
     //standby mode, 863 MHz, auto Vtune, RPS2 off
     RF_WriteConfigRegister(GCONREG, 0b00110000);
@@ -180,15 +188,17 @@ void RF_Initialize(void){
     RF_WriteConfigRegister(GCONREG, 0b01010000);
     //wait for PLL lock
     //if PLL is unstable we get stuck here
-    while(!(RF_ReadConfigRegister(FTPRIREG) & 0b00000010)){
+    while(!(RF_ReadConfigRegister(FTPRIREG) & 0b00000010))
+    {
         Nop();
     }
     //standby mode
     RF_WriteConfigRegister(GCONREG, 0b00100111);
 }
 
-//set radio mode
-void RF_SetMode(RF_MODE mode){
+//set the radio mode
+void RF_SetMode(RF_MODE mode)
+{
     uint8_t value = RF_ReadConfigRegister(GCONREG);
     value = value & 0b00011111;
     value = (mode << 5) | value;
@@ -196,7 +206,8 @@ void RF_SetMode(RF_MODE mode){
 }
 
 //set FIFO threshold for interrupts
-void RF_SetFIFOThreshold(uint8_t limit){
+void RF_SetFIFOThreshold(uint8_t limit)
+{
     uint8_t value = RF_ReadConfigRegister(FIFOCREG);
     value = value & 0b11000000;
     limit = limit & 0b00111111;
@@ -205,7 +216,8 @@ void RF_SetFIFOThreshold(uint8_t limit){
 }
 
 //set packet size in bytes (for packet mode only)
-void RF_SetPacketSize(uint8_t size){
+void RF_SetPacketSize(uint8_t size)
+{
     uint8_t value = RF_ReadConfigRegister(PLOADREG);
     value = value & 0b10000000;
     size = size & 0b01111111;
@@ -214,7 +226,8 @@ void RF_SetPacketSize(uint8_t size){
 }
 
 //set preamble size for packet mode (0-4)
-void RF_SetPreambleSize(uint8_t size){    
+void RF_SetPreambleSize(uint8_t size)
+{    
     uint8_t value = RF_ReadConfigRegister(PKTCREG);
     value = value & 0b10011111;
     size = size & 0b00000011;
@@ -223,37 +236,43 @@ void RF_SetPreambleSize(uint8_t size){
     RF_WriteConfigRegister(PKTCREG, value);
 }
 
-void RF_EnableManchesterEncoding(void){
+void RF_EnableManchesterEncoding(void)
+{
     uint8_t value = RF_ReadConfigRegister(PLOADREG);
     value = value | 0b10000000;
     RF_WriteConfigRegister(PLOADREG, value);
 }
 
-void RF_DisableManchesterEncoding(void){
+void RF_DisableManchesterEncoding(void)
+{
     uint8_t value = RF_ReadConfigRegister(PLOADREG);
     value = value & 0b01111111;
     RF_WriteConfigRegister(PLOADREG, value);
 }
 
-void RF_EnableDataWhitening(void){
+void RF_EnableDataWhitening(void)
+{
     uint8_t value = RF_ReadConfigRegister(PKTCREG);
     value = value | 0b00010000;
     RF_WriteConfigRegister(PKTCREG, value);
 }
 
-void RF_DisableDataWhitening(void){
+void RF_DisableDataWhitening(void)
+{
     uint8_t value = RF_ReadConfigRegister(PKTCREG);
     value = value & 0b11101111;
     RF_WriteConfigRegister(PKTCREG, value);    
 }
 
-void RF_EnableCRC(void){
+void RF_EnableCRC(void)
+{
     uint8_t value = RF_ReadConfigRegister(PKTCREG);
     value = value | 0b00001000;
     RF_WriteConfigRegister(PKTCREG, value);
 }
 
-void RF_DisableCRC(void){
+void RF_DisableCRC(void)
+{
     uint8_t value = RF_ReadConfigRegister(PKTCREG);
     value = value & 0b11110111;
     RF_WriteConfigRegister(PKTCREG, value);    
@@ -263,7 +282,8 @@ void RF_DisableCRC(void){
 //111 = -8dBm
 //000 = 13dBm
 //1 step ~ 3dBm
-void RF_SetTransmitPower(uint8_t power){
+void RF_SetTransmitPower(uint8_t power)
+{
     uint8_t value = RF_ReadConfigRegister(TXCONREG);
     value = value & 0b11110001;
     power = power & 0b00000111;

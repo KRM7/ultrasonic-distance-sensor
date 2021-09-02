@@ -62,11 +62,11 @@ int main(void)
             RF_SetMode(MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
-            //send time
+            //send time (TODO: send distance instead)
             RF_WriteTransmitFIFO(echo_time >> 8);
             RF_WriteTransmitFIFO(echo_time);
             
-            //send temperature
+            //send temperature (TODO: send 1 byte only)
             int16_t temp = ((int16_t)temperature_main + 40) * 10; //(T+40)*10 in int
             uint16_t tempu = (uint16_t)temp;
             RF_WriteTransmitFIFO(tempu >> 8);

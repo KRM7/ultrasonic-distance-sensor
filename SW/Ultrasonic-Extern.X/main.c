@@ -27,10 +27,10 @@ uint16_t DISPLAY_VALUE = 123;
 #define DIGIT3 (DISPLAY_VALUE % 10)
 
 //measurement data
-volatile float distance = 0;            //measured distance in mm (min 2cm, max 4m)
+volatile uint16_t distance = 0;         //measured distance in mm (min 2cm, max 4m)
 volatile uint16_t echo_time = 0;        //echo travel time in us (both ways)
-volatile float temperature_main = 0;    //temperature measured by the main unit (in Celsius)
-volatile float temperature_extern = 0;  //temperature measured by the distant unit (in Celsius)
+volatile int8_t temperature_main = 0;    //temperature measured by the main unit (in Celsius)
+volatile int8_t temperature_extern = 0;  //temperature measured by the distant unit (in Celsius)
 
 //radio mode
 volatile RF_MODE radio_mode;
@@ -83,7 +83,7 @@ void Init(void)
     RF_SetPacketSize(PACKET_SIZE);
     
     //initialize the temperatures
-    temperature_main = T_ReadTemperature();
+    temperature_main = (int8_t)T_ReadTemperature();
     temperature_extern = temperature_main;
     
     CN_SetInterruptHandler(IO_InterruptHandler);
@@ -121,38 +121,42 @@ void IO_InterruptHandler(void)
         //FIFO > FIFO_THRESHOLD interrupt (packet received)
         if (RF1)
         {
-            uint8_t TIME1 = RF_ReadReceiveFIFO();
-            uint8_t TIME0 = RF_ReadReceiveFIFO();
-            uint8_t TEMP1 = RF_ReadReceiveFIFO();
-            uint8_t TEMP0 = RF_ReadReceiveFIFO();
+            uint8_t echo_time_high = RF_ReadReceiveFIFO();
+            uint8_t echo_time_low = RF_ReadReceiveFIFO();
+            uint8_t temp_high = RF_ReadReceiveFIFO();
+            uint8_t temp_low = RF_ReadReceiveFIFO();
             
             //calculate temperature
-            uint16_t tempu = ((uint16_t)TEMP1 << 8) | (uint16_t)TEMP0; ////(T+40)*10 in uint
+            uint16_t tempu = ((uint16_t)temp_high << 8) | (uint16_t)temp_low; ////(T+40)*10 in uint
             int16_t temp = (int16_t)tempu;
-            temperature_main = (float)temp/10 - 40.0; //TEMP in C
-            temperature_extern = T_ReadTemperature();
+            temperature_main = temp/10 - 40; //TEMP in C
+            temperature_extern = (int8_t)T_ReadTemperature();
             
             //calculate and display distance in cm
-            echo_time = ((uint16_t)TIME1 << 8) + (uint16_t)TIME0;        //time in us
-            float SPEED_OF_SOUND = 331.3*sqrt(1+(temperature_main+temperature_extern)/2/273.15);  //speed of sound at TEMP
-            distance = (SPEED_OF_SOUND/2)*((float)echo_time / 1000000)*100;  //distance in cm (min 2cm max 4m)
+            echo_time = ((uint16_t)echo_time_high << 8) | (uint16_t)echo_time_low;  //time in us
+            distance = CalcDistance(echo_time, (float)temperature_main);
             
             //display
             DISPLAY_VALUE = distance;
             
-            radio_mode = MODE_STANDBY;
+            RF_SetMode(radio_mode = MODE_STANDBY);
         }
     }
     
-//    else if(SW){ //MODE button pressed
-//        __delay_ms(15); //debounce delay
-//        if(SW_MODE_GetValue()){         
+    //MODE button pressed
+//    else if (SW)
+//    {
+//        //debounce delay
+//        __delay_ms(15);
+//        if (SW_MODE_GetValue())
+//        {         
 //        }
 //    }
 }
 
-void T1_InterruptHandler(void){
-    //handles the 7 segment display  
+//handles the 7 segment display 
+void T1_InterruptHandler(void)
+{
     incrementDisplayPos(); //0-2 cycle
     displayClockPulse();
     switch (current_display_pos)
@@ -171,19 +175,19 @@ void T1_InterruptHandler(void){
     }
 }
 
+//increments decade counter by 1 //switches digits on 7 segment
 void displayClockPulse(void)
-{
-    //increments decade counter by 1 //switches digits on 7 segment   
+{  
     CNTR_CLK_SetHigh();
     __delay_us(2);      //min 0.3 us
     CNTR_CLK_SetLow();
 }
 
+//displays 1 digit on the 7 segment display
 void displayDigit(int digit)
 {
-    //displays 1 digit on the 7 segment display
-    _LATB7 = (digit & ( 1 << 0 )) >> 0; //LED_A
-    _LATB8 = (digit & ( 1 << 1 )) >> 1; //LED_B
-    _LATB9 = (digit & ( 1 << 2 )) >> 2; //LED_C
-    _LATB6 = (digit & ( 1 << 3 )) >> 3; //LED_D
+    _LATB7 = (digit & ( 1 << 0 )) >> 0;     //LED_A
+    _LATB8 = (digit & ( 1 << 1 )) >> 1;     //LED_B
+    _LATB9 = (digit & ( 1 << 2 )) >> 2;     //LED_C
+    _LATB6 = (digit & ( 1 << 3 )) >> 3;     //LED_D
 }

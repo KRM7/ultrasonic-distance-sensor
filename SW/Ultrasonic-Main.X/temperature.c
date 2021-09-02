@@ -27,7 +27,7 @@ uint16_t T_ReadADC(void)
 
 float T_ReadTemperature(void)
 {
-    //ADCout is ~230 at ~21C, temperatures are compared to these values for higher precision
+    //ADCout is ~230 at ~21C, temperatures are compared to these values for better precision
     int adc_diff = T_ReadADC() - 230;
     
     static const float Vdd = 3.3;

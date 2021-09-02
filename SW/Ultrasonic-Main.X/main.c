@@ -18,21 +18,21 @@
 #include "libpic30.h"
 
 //device modes
-typedef enum {
-    SYSTEM = 0b0,
-    SINGLE = 0b1
-} DEVICE_MODE;
-volatile DEVICE_MODE device_mode = SYSTEM;
+//typedef enum {
+//    SYSTEM = 0b0,
+//    SINGLE = 0b1
+//} DEVICE_MODE;
+//volatile DEVICE_MODE device_mode = SYSTEM;
 
 //measurement data
 volatile bool signal_sent = false;
-volatile float distance = 0.0;              //measured distance in mm (min 2cm, max 4m)
+volatile uint16_t distance = 0;             //measured distance in mm (min 2cm, max 4m)
 volatile uint16_t echo_time = 0;            //echo travel time in us (both ways)
-volatile float temperature_main = 0.0;      //temperature measured by the main unit (in Celsius)
-volatile float temperature_extern = 0.0;    //temperature measured by the distant unit (in Celsius)
+volatile int8_t temperature_main = 0;       //temperature measured by the main unit (in Celsius)
+volatile int8_t temperature_extern = 0;     //temperature measured by the distant unit (in Celsius)
 
 //radio
-volatile RF_MODE radio_mode = MODE_TX;
+volatile RF_MODE radio_mode;
 #define PACKET_SIZE 4
 
 //EEPROM
@@ -68,7 +68,7 @@ int main(void)
             RF_WriteTransmitFIFO(echo_time);
             
             //send temperature
-            int16_t temp = (int16_t)((temperature_main + 40) * 10); //(T+40)*10 in int
+            int16_t temp = ((int16_t)temperature_main + 40) * 10; //(T+40)*10 in int
             uint16_t tempu = (uint16_t)temp;
             RF_WriteTransmitFIFO(tempu >> 8);
             RF_WriteTransmitFIFO(tempu);
@@ -93,8 +93,8 @@ void Init(void)
     //initialize the RF module
     RF_Initialize();
     RF_SetMode(radio_mode = MODE_STANDBY);
-    RF_SetFIFOThreshold(4);
-    RF_SetPacketSize(4);
+    RF_SetFIFOThreshold(PACKET_SIZE);
+    RF_SetPacketSize(PACKET_SIZE);
     
     //initialize the LCD
     LCD_Initialize();
@@ -104,7 +104,7 @@ void Init(void)
     LCD_WriteStrFrom(LCD_LINE2, 1, line2, sizeof(line2));
     
     //initialize the temperature values
-    temperature_main = T_ReadTemperature();
+    temperature_main = (int8_t)T_ReadTemperature();
     temperature_extern = temperature_main;
     
     //initialize the EEPROM
@@ -131,7 +131,7 @@ void IO_InterruptHandler(void){ //ultrasonic sensor, radio, button interrupts ar
         while (ECHO_GetValue()); //distance~ECHO_HIGH
         
         echo_time = TMR2; //time in us
-        temperature_main = T_ReadTemperature();
+        temperature_main = (int8_t)T_ReadTemperature();
         signal_sent = true;
     }
     
@@ -139,9 +139,7 @@ void IO_InterruptHandler(void){ //ultrasonic sensor, radio, button interrupts ar
     else if (radio_mode == MODE_TX)
     {
         //FIFO >= FIFO_THRESHOLD interrupt (packet ready)
-        if (RF0)
-        {
-        }
+        if (RF0) {}
         //TX DONE interrupt (radio transmission complete)
         if (RF1)
         {
@@ -154,9 +152,7 @@ void IO_InterruptHandler(void){ //ultrasonic sensor, radio, button interrupts ar
     else if (radio_mode == MODE_RX)
     {
         //SYNC or ADDRESS match interrupt
-        if (RF0)
-        {
-        }
+        if (RF0) {}
         //FIFO > FIFO_THRESHOLD interrupt (packet received)
         if (RF1)
         {
@@ -174,13 +170,13 @@ void IO_InterruptHandler(void){ //ultrasonic sensor, radio, button interrupts ar
             temperature_extern = (float)temp/10.0 - 40.0; //TEMP in C
             
             //calculate distance in mm
-            distance = CalcDistance((float)echo_time, temperature_main);
+            distance = CalcDistance(echo_time, (float)temperature_main);
 
             //write result to the EEPROM (16bit distance in mm) every 1 sec
             static bool b = 0;
             if (b++)
             {
-                EEPROM_Write16bits(eeprom_address, (uint16_t)distance);
+                EEPROM_Write16bits(eeprom_address, distance);
             }
             
             //display results on LCD
@@ -212,5 +208,3 @@ void TriggerPulse(void)
     __delay_us(10);
     TRIG_SetLow();
 }
-
-/*END OF FILE*/

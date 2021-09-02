@@ -1,5 +1,0 @@
-programs:
-clean up program:
-variable, function names, separate header, c files
-
-usb communication

@@ -5,6 +5,8 @@
 
 #include <xc.h> 
 
+//for the delays
+#include "mcc_generated_files/clock.h"
 #define FCY (_XTAL_FREQ / 2)
 #include "libpic30.h"
 
@@ -22,7 +24,7 @@
 #define SCL_LOW()   (_LATB8 = 0)    //set SCL pin low
 
 
-inline void I2C_Init(void)
+static inline void I2C_Init(void)
 {
     ODCBbits.ODB8 = 1;  //SCL open drain
     ODCBbits.ODB9 = 1;  //SDA open drain  
@@ -33,7 +35,7 @@ inline void I2C_Init(void)
 }
 
 //generate start condition
-inline void I2C_Start(void)
+static inline void I2C_Start(void)
 {
     SDA_HIGH();
     SCL_HIGH();
@@ -45,7 +47,7 @@ inline void I2C_Start(void)
 }
 
 //generate stop condition
-inline void I2C_Stop(void)
+static inline void I2C_Stop(void)
 {
     SDA_LOW();
     I2C_delay();
@@ -56,7 +58,7 @@ inline void I2C_Stop(void)
 }
 
 //write 1 bit
-inline void I2C_WriteBit(bool b)
+static inline void I2C_WriteBit(bool b)
 {   
     b ? SDA_HIGH() : SDA_LOW();
 
@@ -67,7 +69,7 @@ inline void I2C_WriteBit(bool b)
 }
 
 //read 1 bit
-inline bool I2C_ReadBit(void)
+static inline bool I2C_ReadBit(void)
 {    
     SDA_HIGH();
     I2C_delay();
@@ -80,7 +82,7 @@ inline bool I2C_ReadBit(void)
 }
 
 //write one byte, returns ACK bit
-inline bool I2C_WriteByte(uint8_t data)
+static inline bool I2C_WriteByte(uint8_t data)
 {  
     bool ACK = 0;
     
@@ -96,7 +98,7 @@ inline bool I2C_WriteByte(uint8_t data)
 }
 
 //read one byte
-inline uint8_t I2C_ReadByte(bool ACK)
+static inline uint8_t I2C_ReadByte(bool ACK)
 {   
     uint8_t data = 0;
     

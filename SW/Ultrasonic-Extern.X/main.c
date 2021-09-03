@@ -12,24 +12,25 @@
 #define FCY (_XTAL_FREQ / 2)
 #include "libpic30.h"
 
-//device mode
-//typedef enum{
-//    SYSTEM = 0b0,
-//    SINGLE = 0b1
-//} DEVICE_MODE;
-//volatile DEVICE_MODE MODE = SYSTEM;
 
-//measurement data
-volatile uint16_t distance = 0;         //measured distance in mm (min 2cm, max 4m)
-volatile uint16_t echo_time = 0;        //echo travel time in us (both ways)
-volatile int8_t temperature_main = 0;   //temperature measured by the main unit (in Celsius)
-volatile int8_t temperature_extern = 0; //temperature measured by the distant unit (in Celsius)
+//global variables
+typedef enum {
+    MODE_SYSTEM = 0b0,
+    MODE_SINGLE = 0b1
+} DeviceMode;
+DeviceMode dev_mode = MODE_SYSTEM;  //unused
 
-volatile struct SevenSegment display;
+struct SevenSegment display;
 
-//radio mode
-volatile RF_MODE radio_mode;
+RF_MODE radio_mode;
 #define PACKET_SIZE 3
+
+
+//flags
+volatile bool MSG_RECEIVED = false;
+volatile bool MSG_SENT = false;
+volatile bool MODE_PRESS = false;
+
 
 void Init(void);
 void IO_InterruptHandler(void); //IO interrupt handler
@@ -39,19 +40,70 @@ void T1_InterruptHandler(void); //handles the 7 segment display
 int main(void)
 {
     Init();
+    
+    uint16_t distance = 0;  //measured distance in mm (min 2cm, max 4m)
+    int8_t temperature_extern = (int8_t)T_ReadTemperature();  //in Celsius
+    int8_t temperature_main = temperature_extern;             //in Celsius
 
     while (1)
     {
-        if (radio_mode == MODE_STANDBY)
+        if (MSG_RECEIVED)
         {
+            MSG_RECEIVED = false;
+            
+            //a packet was received from the main unit, and is in the RF module's receive FIFO
+            //the packet contains in order: echo time high and low bytes, temperature byte measured by the main units sensor
+            //update the 7 segment display based on the new data received from the main unit
+            //send back an answer with the temperature measured by this unit
+            
+            //get the received packet
+            uint8_t echo_time_high = RF_ReadReceiveFIFO();
+            uint8_t echo_time_low = RF_ReadReceiveFIFO();
+            uint8_t temp_byte = RF_ReadReceiveFIFO();
+            
+            //calculate the temperatures
+            temperature_main = ConvertU8toI8(temp_byte);
+            temperature_extern = (int8_t)T_ReadTemperature();
+            
+            //calculate the distance from the echo time
+            uint16_t echo_time = ((uint16_t)echo_time_high << 8) | (uint16_t)echo_time_low;  //two-way time in us
+            distance = CalcDistance(echo_time, (float)temperature_main);
+            
+            //display distance in cm
+            SSEG_SetDisplayValue(&display, distance/10);
+            
+            
+            //send answer message
             RF_SetMode(radio_mode = MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
             RF_WriteTransmitFIFO(0x00);     //cmd byte0
             RF_WriteTransmitFIFO(0x00);     //cmd byte1                 
-            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));  //temperature byte
+            
         }
         
+        if (MSG_SENT)
+        {     
+            MSG_SENT = false;
+            
+            //the answer has been sent out to the main unit
+            //switch back this unit's RF module to receiver mode
+            
+            RF_SetMode(radio_mode = MODE_RX);
+            RF_SetFIFOThreshold(PACKET_SIZE - 1);
+            
+            LED_MODE_Toggle();
+        }
+        
+        if (MODE_PRESS)
+        {
+            MODE_PRESS = false;
+            
+            //the mode button was pressed
+        }
+        
+        //update the warning LEDs based on the distance
         distance < 250 ? LED_WARN1_SetHigh() : LED_WARN1_SetLow();
         distance < 500 ? LED_WARN2_SetHigh() : LED_WARN2_SetLow();
     }
@@ -64,26 +116,24 @@ void Init(void)
     //initialize the device
     __delay_ms(10);
     SYSTEM_Initialize();
-    RF_Initialize();
     
     //initialize the RF module
+    RF_Initialize();
     RF_SetMode(radio_mode = MODE_RX);
     RF_SetFIFOThreshold(PACKET_SIZE - 1);
     RF_SetPacketSize(PACKET_SIZE);
     
-    //initialize the temperature values
-    temperature_main = (int8_t)T_ReadTemperature();
-    temperature_extern = temperature_main;
-    
     //initialize the 7 segment display
     SSEG_Init(&display);
     
+    //set interrupt handlers
     CN_SetInterruptHandler(IO_InterruptHandler);
     TMR1_SetInterruptHandler(T1_InterruptHandler);
 }
 
 void IO_InterruptHandler(void)
 {  
+    //read input ports
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;
     
@@ -94,56 +144,43 @@ void IO_InterruptHandler(void)
     //transmit mode radio interrupts
     if (radio_mode == MODE_TX)
     {
-        //FIFO >= FIFO_THRESHOLD interrupt (transmit start)
-        if (RF0) {}
-        //TX DONE interrupt
+        //FIFO >= FIFO_THRESHOLD interrupt (transmission starting)
+        if (RF0)
+        {
+            //this interrupt is unused
+        }
+        //transmission done interrupt
         if (RF1)
         {
-            //switch back to receive mode
-            RF_SetMode(radio_mode = MODE_RX);
-            RF_SetFIFOThreshold(PACKET_SIZE - 1);
-            LED_MODE_Toggle();
+            MSG_SENT = true;
         }
     }
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt
-        if (RF0) {}
-        //FIFO > FIFO_THRESHOLD interrupt (packet received)
+        //SYNC or ADDRESS match interrupt (packet incoming)
+        if (RF0)
+        {
+            //this interrupt is unused.
+        }
+        //FIFO > FIFO_THRESHOLD interrupt (full packet received)
         if (RF1)
         {
-            uint8_t echo_time_high = RF_ReadReceiveFIFO();
-            uint8_t echo_time_low = RF_ReadReceiveFIFO();
-            uint8_t temp_byte = RF_ReadReceiveFIFO();
-            
-            //calculate temperature
-            temperature_main = ConvertU8toI8(temp_byte);
-            temperature_extern = (int8_t)T_ReadTemperature();
-            
-            //calculate and display distance in cm
-            echo_time = ((uint16_t)echo_time_high << 8) | (uint16_t)echo_time_low;  //time in us
-            distance = CalcDistance(echo_time, (float)temperature_main);
-            
-            //display distance in cm
-            SSEG_SetDisplayValue(&display, distance/10);
-            
-            RF_SetMode(radio_mode = MODE_STANDBY);
+            MSG_RECEIVED = true;
+        }
+    }  
+    //MODE button pressed interrupt
+    else if (SW)
+    {
+        __delay_ms(15);  //debounce delay
+        
+        if (SW_MODE_GetValue())
+        {
+            MODE_PRESS = true;
         }
     }
-    
-    //MODE button pressed
-//    else if (SW)
-//    {
-//        //debounce delay
-//        __delay_ms(15);
-//        if (SW_MODE_GetValue())
-//        {
-//        }
-//    }
 }
 
-//handles the 7 segment display
 void T1_InterruptHandler(void)
 {
     //move the "cursor" to the next digit/position and display the value in that position

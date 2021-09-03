@@ -17,12 +17,12 @@
 #define FCY (_XTAL_FREQ / 2)
 #include "libpic30.h"
 
-//device modes
-//typedef enum {
-//    SYSTEM = 0b0,
-//    SINGLE = 0b1
-//} DEVICE_MODE;
-//volatile DEVICE_MODE device_mode = SYSTEM;
+
+typedef enum {
+    SYSTEM = 0b0,
+    SINGLE = 0b1
+} DEVICE_MODE;
+volatile DEVICE_MODE device_mode = SYSTEM;
 
 //measurement data
 volatile bool signal_sent = false;
@@ -41,8 +41,14 @@ volatile uint16_t eeprom_address;
 //USB
 struct USB_BUFFERS usb_buffers;
 
+//flags
+volatile bool MSG_SENT = false;
+volatile bool MSG_RECEIVED = false;
+volatile bool MEAS_PRESS = false;
+volatile bool ECHO_RET = false;
+
 void Init(void);
-void IO_InterruptHandler(void);
+void IO_InterruptHandler(void); //handles all IO interrupts
 void TriggerPulse(void);
 
 int main(void)
@@ -51,11 +57,10 @@ int main(void)
 
     while (1)
     {     
-        signal_sent = false;
         TriggerPulse();
         __delay_ms(60);
         
-        if (signal_sent && echo_time < 40000)
+        if (ECHO_RET && echo_time < 40000)
         {
             //transmit mode
             radio_mode = MODE_TX;
@@ -72,7 +77,24 @@ int main(void)
             USB_Transfer(&usb_buffers);
             __delay_ms(450);
         }
-     
+        if (MSG_SENT)
+        {
+            MSG_SENT = false;
+            
+            
+        }
+        if (MSG_RECEIVED)
+        {
+            MSG_RECEIVED = false;
+            
+            
+        }
+        if (MEAS_PRESS)
+        {
+            MEAS_PRESS = false;
+            
+            
+        }
     }
 
     return 1;
@@ -106,13 +128,13 @@ void Init(void)
     //initialize the EEPROM
     eeprom_address = EEPROM_Initialize();
     
+    //set up the interrupt handlers
     CN_SetInterruptHandler(IO_InterruptHandler);
 }
 
-//ultrasonic sensor, radio, button interrupts are handled here
 void IO_InterruptHandler(void)
 {
-    
+    //read ports
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;
     
@@ -129,18 +151,24 @@ void IO_InterruptHandler(void)
         while (ECHO_GetValue()); //distance~ECHO_HIGH
         
         echo_time = TMR2; //time in us
+        
         temperature_main = (int8_t)T_ReadTemperature();
-        signal_sent = true;
+        
+        ECHO_RET = true;
     }
     
     //transmit mode radio interrupts
     else if (radio_mode == MODE_TX)
     {
         //FIFO >= FIFO_THRESHOLD interrupt (packet ready)
-        if (RF0) {}
-        //TX DONE interrupt (radio transmission complete)
+        if (RF0)
+        {
+            //this interrupt is unused
+        }
+        //TX DONE interrupt (transmission complete)
         if (RF1)
         {
+            MSG_SENT = true;
             //switch the radio to receiver mode
             RF_SetMode(radio_mode = MODE_RX);
             RF_SetFIFOThreshold(PACKET_SIZE - 1);
@@ -150,10 +178,14 @@ void IO_InterruptHandler(void)
     else if (radio_mode == MODE_RX)
     {
         //SYNC or ADDRESS match interrupt
-        if (RF0) {}
+        if (RF0)
+        {
+            //this interrupt is unused
+        }
         //FIFO > FIFO_THRESHOLD interrupt (packet received)
         if (RF1)
         {
+            MSG_RECEIVED = true;
             //read the answer
             LED_MODE_Toggle();
             
@@ -185,16 +217,16 @@ void IO_InterruptHandler(void)
             RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
-     
-//    else if (MEAS && device_mode == SINGLE)
-//    {
-//        __delay_ms(15);         //debounce delay
-//        if (MEAS_GetValue())
-//        {
-//            //TriggerPulse();     //send trigger pulse
-//            //TMR2 = 0;           //timer start
-//        }
-//    }
+    //measure button interrupt
+    else if (MEAS && device_mode == SINGLE)
+    {
+        __delay_ms(15); //debounce delay
+        
+        if (MEAS_GetValue())
+        {
+            MEAS_PRESS = true;
+        }
+    }
 }
 
 void TriggerPulse(void)

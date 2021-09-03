@@ -144,12 +144,12 @@ void IO_InterruptHandler(void)
     //transmit mode radio interrupts
     if (radio_mode == MODE_TX)
     {
-        //FIFO >= FIFO_THRESHOLD interrupt (transmission starting)
+        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) ??\_
         if (RF0)
         {
             //this interrupt is unused
         }
-        //transmission done interrupt
+        //TX DONE interrupt (transmission complete) _/??
         if (RF1)
         {
             MSG_SENT = true;
@@ -158,12 +158,12 @@ void IO_InterruptHandler(void)
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt (packet incoming)
+        //SYNC or ADDRESS match interrupt (packet incoming) _/??
         if (RF0)
         {
             //this interrupt is unused.
         }
-        //FIFO > FIFO_THRESHOLD interrupt (full packet received)
+        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) _/??
         if (RF1)
         {
             MSG_RECEIVED = true;

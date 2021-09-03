@@ -13,15 +13,16 @@
 #include "libpic30.h"
 
 
-//global variables
 typedef enum {
     MODE_SYSTEM = 0b0,
     MODE_SINGLE = 0b1
 } DeviceMode;
-DeviceMode dev_mode = MODE_SYSTEM;  //unused
+DeviceMode dev_mode = MODE_SYSTEM;  //currently unused
 
+//7-segment display state
 struct SevenSegment display;
 
+//radio state
 RF_MODE radio_mode;
 #define PACKET_SIZE 3
 
@@ -41,7 +42,7 @@ int main(void)
 {
     Init();
     
-    uint16_t distance = 0;  //measured distance in mm (min 2cm, max 4m)
+    uint16_t distance = 0;     //measured distance in mm (min 2cm, max 4m)
     int8_t temperature_extern = (int8_t)T_ReadTemperature();  //in Celsius
     int8_t temperature_main = temperature_extern;             //in Celsius
 
@@ -77,10 +78,9 @@ int main(void)
             RF_SetMode(radio_mode = MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
-            RF_WriteTransmitFIFO(0x00);     //cmd byte0
-            RF_WriteTransmitFIFO(0x00);     //cmd byte1                 
-            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));  //temperature byte
-            
+            RF_WriteTransmitFIFO(0x00);     //cmd byte0, unused
+            RF_WriteTransmitFIFO(0x00);     //cmd byte1, unused
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));  //temperature byte           
         }
         
         if (MSG_SENT)
@@ -169,7 +169,7 @@ void IO_InterruptHandler(void)
             MSG_RECEIVED = true;
         }
     }  
-    //MODE button pressed interrupt
+    //MODE button pressed interrupt _/??
     else if (SW)
     {
         __delay_ms(15);  //debounce delay
@@ -185,5 +185,5 @@ void T1_InterruptHandler(void)
 {
     //move the "cursor" to the next digit/position and display the value in that position
     SSEG_NextPos(&display);
-    SSEG_DisplayDigit(display.digits[display.current_display_pos]);
+    SSEG_DisplayDigit(&display);
 }

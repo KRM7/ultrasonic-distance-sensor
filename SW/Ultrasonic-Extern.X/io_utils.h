@@ -6,11 +6,6 @@
 #include <xc.h>
 #include <math.h>
 
-//convert an unsigned integer to a character (num < 10)
-static inline char DigitToChar(uint8_t num)
-{
-    return num + '0';
-}
 
 //return a specific digit of a number (pos = 0 is the least significant digit)
 static inline uint8_t GetDigit(float number, uint8_t pos)

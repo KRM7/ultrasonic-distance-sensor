@@ -39,8 +39,10 @@ void SSEG_SetDisplayValue(struct SevenSegment* display, uint16_t value)
     display->digits[2] = GetDigit((float)value, 0); //least significant digit
 }
 
-void SSEG_DisplayDigit(uint16_t digit)
+void SSEG_DisplayDigit(struct SevenSegment* display)
 {
+    uint16_t digit = display->digits[display->current_display_pos];
+    
     _LATB7 = (digit & ( 1 << 0 )) >> 0;     //LED_A
     _LATB8 = (digit & ( 1 << 1 )) >> 1;     //LED_B
     _LATB9 = (digit & ( 1 << 2 )) >> 2;     //LED_C

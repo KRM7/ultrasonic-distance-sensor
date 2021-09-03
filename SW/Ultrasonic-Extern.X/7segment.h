@@ -21,7 +21,7 @@ void SSEG_NextPos(struct SevenSegment* display);
 void SSEG_SetDisplayValue(struct SevenSegment* display, uint16_t value);
 
 //displays a digit on the 7 segment display
-void SSEG_DisplayDigit(uint16_t digit);
+void SSEG_DisplayDigit(struct SevenSegment* display);
 
 
 #endif	/* SEVEN_SEGMENT_H */

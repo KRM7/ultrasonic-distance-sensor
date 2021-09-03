@@ -65,7 +65,7 @@ void RF_Initialize(void)
     //FIFO size=64byte , FIFO threshold=63byte
     RF_WriteConfigRegister(FIFOCREG, 0b11111111);
     //PLL settings for 868 MHz
-    //PLL R=125 (recommended R ~ 119)
+    //PLL R=125 (recommended R ~ 119 by datasheet)
     RF_WriteConfigRegister(R1CREG, 0x7D);
     //PLL P=100
     RF_WriteConfigRegister(P1CREG, 0x64);
@@ -82,11 +82,11 @@ void RF_Initialize(void)
     RF_WriteConfigRegister(PACREG, 0b00111000);
     
     //interrupt config registers
-    //Receive mode: IRQ1 =: FIFO >= FIFO_THRESHOLD, IRQ0 =: SYNCWORD/ADDRESS match 
+    //Receive mode: IRQ1 =: FIFO = FIFO_THRESHOLD, IRQ0 =: SYNCWORD/ADDRESS match 
     //Transmit mode: IRQ1 =: TXDONE
     //FIFO_FULL, FIFO_EMPTY, FIFO_OVERRUN IRQ disabled
     RF_WriteConfigRegister(FTXRXIREG, 0b11111001);
-    //Transmit mode IRQ0 =: FIFO_THRESHOLD, packet transmit start at FIFO>=FIFO_THRESHOLD, RSSI interrupt disabled
+    //Transmit mode IRQ0 =: FIFO_THRESHOLD, packet transmit start at FIFO = FIFO_THRESHOLD, RSSI interrupt disabled
     RF_WriteConfigRegister(FTPRIREG, 0b00000111);
     //RSSI interrupt threshold (default, not used)
     RF_WriteConfigRegister(RSTHIREG, 0x00);

@@ -1,7 +1,6 @@
 #include "io_utils.h"
 #include "xc.h"
 #include <math.h>
-#include <stdint.h>
 
 
 uint16_t CalcDistance(uint16_t bounce_time_us, float temperature_c)

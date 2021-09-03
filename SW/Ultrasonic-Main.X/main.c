@@ -138,10 +138,25 @@ void IO_InterruptHandler(void)
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;
     
+    static bool ECHO_OLD = 0;
+    static bool RF0_OLD = 0;
+    static bool RF1_OLD = 0;
+    static bool MEAS_OLD = 0;
+    
     bool ECHO = porta & 16;
     bool RF0 = porta & 1;
     bool RF1 = portb & 4;
     bool MEAS = portb & 128;
+    
+    bool ECHO_CHANGE = ECHO_OLD ^ ECHO;
+    bool RF0_CHANGE = RF0_OLD ^ RF0;
+    bool RF1_CHANGE = RF1_OLD ^ RF1;
+    bool MEAS_CHANGE = MEAS_OLD ^ MEAS;
+    
+    ECHO_OLD = ECHO;
+    RF0_OLD = RF0;
+    RF1_OLD = RF1;
+    MEAS_OLD = MEAS;
     
     //echo signal interrupt
     if (ECHO)
@@ -160,15 +175,16 @@ void IO_InterruptHandler(void)
     //transmit mode radio interrupts
     else if (radio_mode == MODE_TX)
     {
-        //FIFO >= FIFO_THRESHOLD interrupt (packet ready)
-        if (RF0)
+        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) ??\_
+        if (!RF0)
         {
             //this interrupt is unused
         }
-        //TX DONE interrupt (transmission complete)
+        //TX DONE interrupt (transmission complete) _/??
         if (RF1)
         {
             MSG_SENT = true;
+            
             //switch the radio to receiver mode
             RF_SetMode(radio_mode = MODE_RX);
             RF_SetFIFOThreshold(PACKET_SIZE - 1);
@@ -182,7 +198,7 @@ void IO_InterruptHandler(void)
         {
             //this interrupt is unused
         }
-        //FIFO > FIFO_THRESHOLD interrupt (packet received)
+        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) _/??
         if (RF1)
         {
             MSG_RECEIVED = true;

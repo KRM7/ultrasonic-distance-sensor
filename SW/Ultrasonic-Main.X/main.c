@@ -158,8 +158,8 @@ void IO_InterruptHandler(void)
     RF1_OLD = RF1;
     MEAS_OLD = MEAS;
     
-    //echo signal interrupt
     if (ECHO)
+    //echo signal interrupt _/??
     {
         TMR2 = 58; //offset error correction
         
@@ -193,8 +193,8 @@ void IO_InterruptHandler(void)
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt
         if (RF0)
+        //SYNC or ADDRESS match interrupt (packet incoming) _/??
         {
             //this interrupt is unused
         }
@@ -216,11 +216,11 @@ void IO_InterruptHandler(void)
             distance = CalcDistance(echo_time, (float)temperature_main);
 
             //write result to the EEPROM (16bit distance in mm) every 1 sec
-//            static bool b = 0;
-//            if (b++)
-//            {
-//                EEPROM_Write16bits(eeprom_address, distance);
-//            }
+            static bool b = 0;
+            if (b++)
+            {
+                //EEPROM_Write16bits(eeprom_address, distance);
+            }
             
             //display results on LCD
             char line1[7], line2[5];
@@ -233,8 +233,8 @@ void IO_InterruptHandler(void)
             RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
-    //measure button interrupt
     else if (MEAS && device_mode == SINGLE)
+    //measure button interrupt _/??
     {
         __delay_ms(15); //debounce delay
         

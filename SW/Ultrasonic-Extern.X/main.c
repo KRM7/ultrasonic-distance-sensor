@@ -22,8 +22,8 @@
 //measurement data
 volatile uint16_t distance = 0;         //measured distance in mm (min 2cm, max 4m)
 volatile uint16_t echo_time = 0;        //echo travel time in us (both ways)
-volatile int8_t temperature_main = 0;    //temperature measured by the main unit (in Celsius)
-volatile int8_t temperature_extern = 0;  //temperature measured by the distant unit (in Celsius)
+volatile int8_t temperature_main = 0;   //temperature measured by the main unit (in Celsius)
+volatile int8_t temperature_extern = 0; //temperature measured by the distant unit (in Celsius)
 
 volatile struct SevenSegment display;
 
@@ -32,8 +32,8 @@ volatile RF_MODE radio_mode;
 #define PACKET_SIZE 3
 
 void Init(void);
-void IO_InterruptHandler(void);
-void T1_InterruptHandler(void);
+void IO_InterruptHandler(void); //IO interrupt handler
+void T1_InterruptHandler(void); //handles the 7 segment display
 
 
 int main(void)
@@ -71,7 +71,7 @@ void Init(void)
     RF_SetFIFOThreshold(PACKET_SIZE - 1);
     RF_SetPacketSize(PACKET_SIZE);
     
-    //initialize the temperatures
+    //initialize the temperature values
     temperature_main = (int8_t)T_ReadTemperature();
     temperature_extern = temperature_main;
     
@@ -146,19 +146,7 @@ void IO_InterruptHandler(void)
 //handles the 7 segment display
 void T1_InterruptHandler(void)
 {
+    //move the "cursor" to the next digit/position and display the value in that position
     SSEG_NextPos(&display);
-    switch (display.current_display_pos)
-    {
-        case 0:
-            SSEG_DisplayDigit(display.digits[0]);
-            break;
-        case 1:
-            SSEG_DisplayDigit(display.digits[1]);
-            break;
-        case 2:
-            SSEG_DisplayDigit(display.digits[2]);
-            break;
-        default:
-            break;
-    }
+    SSEG_DisplayDigit(display.digits[display.current_display_pos]);
 }

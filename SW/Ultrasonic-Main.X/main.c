@@ -33,7 +33,7 @@ volatile int8_t temperature_extern = 0;     //temperature measured by the distan
 
 //radio
 volatile RF_MODE radio_mode;
-#define PACKET_SIZE 4
+#define PACKET_SIZE 3
 
 //EEPROM
 volatile uint16_t eeprom_address;
@@ -62,15 +62,13 @@ int main(void)
             RF_SetMode(MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
-            //send time (TODO: send distance instead)
+            //send time
             RF_WriteTransmitFIFO(echo_time >> 8);
             RF_WriteTransmitFIFO(echo_time);
             
             //send temperature (TODO: send 1 byte only)
-            int16_t temp = ((int16_t)temperature_main + 40) * 10; //(T+40)*10 in int
-            uint16_t tempu = (uint16_t)temp;
-            RF_WriteTransmitFIFO(tempu >> 8);
-            RF_WriteTransmitFIFO(tempu);
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
 
             USB_Transfer(&usb_buffers);
             __delay_ms(450);
@@ -166,9 +164,7 @@ void IO_InterruptHandler(void)
             uint8_t temperature_byte0 = RF_ReadReceiveFIFO();
             
             //calculate temperature
-            uint16_t tempu = ((uint16_t)temperature_byte1 << 8) | (uint16_t)temperature_byte0; //(T+40)*10 in uint
-            int16_t temp = (int16_t)tempu;
-            temperature_extern = (float)temp/10.0 - 40.0; //TEMP in C
+            temperature_extern = ConvertU8toI8(temperature_byte1);
             
             //calculate distance in mm
             distance = CalcDistance(echo_time, (float)temperature_main);

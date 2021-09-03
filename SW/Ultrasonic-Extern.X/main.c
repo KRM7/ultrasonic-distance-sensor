@@ -51,16 +51,13 @@ int main(void)
     {
         if (radio_mode == MODE_STANDBY)
         {
-            int16_t temp = (int16_t)((temperature_extern + 40) * 10); //(T+40)*10 in int
-            uint16_t tempu = (uint16_t)temp;
-
             RF_SetMode(radio_mode = MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
-            RF_WriteTransmitFIFO(0x00);         //cmd byte0
-            RF_WriteTransmitFIFO(0x00);         //cmd byte1                 
-            RF_WriteTransmitFIFO(tempu >> 8);   //temperature byte0
-            RF_WriteTransmitFIFO(tempu);        //temperature byte1
+            RF_WriteTransmitFIFO(0x00);     //cmd byte0
+            RF_WriteTransmitFIFO(0x00);     //cmd byte1                 
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte0
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte1
         }
         
         distance < 250 ? LED_WARN1_SetHigh() : LED_WARN1_SetLow();
@@ -127,17 +124,15 @@ void IO_InterruptHandler(void)
             uint8_t temp_low = RF_ReadReceiveFIFO();
             
             //calculate temperature
-            uint16_t tempu = ((uint16_t)temp_high << 8) | (uint16_t)temp_low; ////(T+40)*10 in uint
-            int16_t temp = (int16_t)tempu;
-            temperature_main = temp/10 - 40; //TEMP in C
+            temperature_main = ConvertU8toI8(temp_high);
             temperature_extern = (int8_t)T_ReadTemperature();
             
             //calculate and display distance in cm
             echo_time = ((uint16_t)echo_time_high << 8) | (uint16_t)echo_time_low;  //time in us
             distance = CalcDistance(echo_time, (float)temperature_main);
             
-            //display
-            DISPLAY_VALUE = distance;
+            //display distance in cm
+            DISPLAY_VALUE = distance / 10;
             
             RF_SetMode(radio_mode = MODE_STANDBY);
         }
@@ -149,12 +144,12 @@ void IO_InterruptHandler(void)
 //        //debounce delay
 //        __delay_ms(15);
 //        if (SW_MODE_GetValue())
-//        {         
+//        {
 //        }
 //    }
 }
 
-//handles the 7 segment display 
+//handles the 7 segment display
 void T1_InterruptHandler(void)
 {
     incrementDisplayPos(); //0-2 cycle

@@ -97,9 +97,9 @@ void Init(void)
     
     //initialize the LCD
     LCD_Initialize();
-    const char* line1 = "Dist: ";
+    char line1[6] = "Dist: ";
     LCD_WriteStrFrom(LCD_LINE1, 1, line1, sizeof(line1));
-    const char* line2 = "Temp: ";
+    char line2[6] = "Temp: ";
     LCD_WriteStrFrom(LCD_LINE2, 1, line2, sizeof(line2));
     
     //initialize the temperature values

@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=mcc_generated_files/adc1.c mcc_generated_files/system.c mcc_generated_files/mcc.c mcc_generated_files/spi1.c mcc_generated_files/tmr1.c mcc_generated_files/pin_manager.c mcc_generated_files/interrupt_manager.c mcc_generated_files/clock.c mcc_generated_files/traps.c main.c io_utils.c
+SOURCEFILES_QUOTED_IF_SPACED=mcc_generated_files/adc1.c mcc_generated_files/system.c mcc_generated_files/mcc.c mcc_generated_files/spi1.c mcc_generated_files/tmr1.c mcc_generated_files/pin_manager.c mcc_generated_files/interrupt_manager.c mcc_generated_files/clock.c mcc_generated_files/traps.c main.c io_utils.c radio.c temperature.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/mcc_generated_files/adc1.o ${OBJECTDIR}/mcc_generated_files/system.o ${OBJECTDIR}/mcc_generated_files/mcc.o ${OBJECTDIR}/mcc_generated_files/spi1.o ${OBJECTDIR}/mcc_generated_files/tmr1.o ${OBJECTDIR}/mcc_generated_files/pin_manager.o ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o ${OBJECTDIR}/mcc_generated_files/clock.o ${OBJECTDIR}/mcc_generated_files/traps.o ${OBJECTDIR}/main.o ${OBJECTDIR}/io_utils.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/mcc_generated_files/adc1.o.d ${OBJECTDIR}/mcc_generated_files/system.o.d ${OBJECTDIR}/mcc_generated_files/mcc.o.d ${OBJECTDIR}/mcc_generated_files/spi1.o.d ${OBJECTDIR}/mcc_generated_files/tmr1.o.d ${OBJECTDIR}/mcc_generated_files/pin_manager.o.d ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o.d ${OBJECTDIR}/mcc_generated_files/clock.o.d ${OBJECTDIR}/mcc_generated_files/traps.o.d ${OBJECTDIR}/main.o.d ${OBJECTDIR}/io_utils.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/mcc_generated_files/adc1.o ${OBJECTDIR}/mcc_generated_files/system.o ${OBJECTDIR}/mcc_generated_files/mcc.o ${OBJECTDIR}/mcc_generated_files/spi1.o ${OBJECTDIR}/mcc_generated_files/tmr1.o ${OBJECTDIR}/mcc_generated_files/pin_manager.o ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o ${OBJECTDIR}/mcc_generated_files/clock.o ${OBJECTDIR}/mcc_generated_files/traps.o ${OBJECTDIR}/main.o ${OBJECTDIR}/io_utils.o ${OBJECTDIR}/radio.o ${OBJECTDIR}/temperature.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/mcc_generated_files/adc1.o.d ${OBJECTDIR}/mcc_generated_files/system.o.d ${OBJECTDIR}/mcc_generated_files/mcc.o.d ${OBJECTDIR}/mcc_generated_files/spi1.o.d ${OBJECTDIR}/mcc_generated_files/tmr1.o.d ${OBJECTDIR}/mcc_generated_files/pin_manager.o.d ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o.d ${OBJECTDIR}/mcc_generated_files/clock.o.d ${OBJECTDIR}/mcc_generated_files/traps.o.d ${OBJECTDIR}/main.o.d ${OBJECTDIR}/io_utils.o.d ${OBJECTDIR}/radio.o.d ${OBJECTDIR}/temperature.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/mcc_generated_files/adc1.o ${OBJECTDIR}/mcc_generated_files/system.o ${OBJECTDIR}/mcc_generated_files/mcc.o ${OBJECTDIR}/mcc_generated_files/spi1.o ${OBJECTDIR}/mcc_generated_files/tmr1.o ${OBJECTDIR}/mcc_generated_files/pin_manager.o ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o ${OBJECTDIR}/mcc_generated_files/clock.o ${OBJECTDIR}/mcc_generated_files/traps.o ${OBJECTDIR}/main.o ${OBJECTDIR}/io_utils.o
+OBJECTFILES=${OBJECTDIR}/mcc_generated_files/adc1.o ${OBJECTDIR}/mcc_generated_files/system.o ${OBJECTDIR}/mcc_generated_files/mcc.o ${OBJECTDIR}/mcc_generated_files/spi1.o ${OBJECTDIR}/mcc_generated_files/tmr1.o ${OBJECTDIR}/mcc_generated_files/pin_manager.o ${OBJECTDIR}/mcc_generated_files/interrupt_manager.o ${OBJECTDIR}/mcc_generated_files/clock.o ${OBJECTDIR}/mcc_generated_files/traps.o ${OBJECTDIR}/main.o ${OBJECTDIR}/io_utils.o ${OBJECTDIR}/radio.o ${OBJECTDIR}/temperature.o
 
 # Source Files
-SOURCEFILES=mcc_generated_files/adc1.c mcc_generated_files/system.c mcc_generated_files/mcc.c mcc_generated_files/spi1.c mcc_generated_files/tmr1.c mcc_generated_files/pin_manager.c mcc_generated_files/interrupt_manager.c mcc_generated_files/clock.c mcc_generated_files/traps.c main.c io_utils.c
+SOURCEFILES=mcc_generated_files/adc1.c mcc_generated_files/system.c mcc_generated_files/mcc.c mcc_generated_files/spi1.c mcc_generated_files/tmr1.c mcc_generated_files/pin_manager.c mcc_generated_files/interrupt_manager.c mcc_generated_files/clock.c mcc_generated_files/traps.c main.c io_utils.c radio.c temperature.c
 
 
 
@@ -161,6 +161,18 @@ ${OBJECTDIR}/io_utils.o: io_utils.c  .generated_files/d31b45071a826995e6f57646dd
 	@${RM} ${OBJECTDIR}/io_utils.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  io_utils.c  -o ${OBJECTDIR}/io_utils.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/io_utils.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
+${OBJECTDIR}/radio.o: radio.c  .generated_files/b357e416d5f69738a080a101d107a3e3e37ec78e.flag .generated_files/8a037868bcd381a0152c32f5585b257d4ddd2d8f.flag
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/radio.o.d 
+	@${RM} ${OBJECTDIR}/radio.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  radio.c  -o ${OBJECTDIR}/radio.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/radio.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/temperature.o: temperature.c  .generated_files/ce81bea8647595fa75c4b6cf202ef3e659c7ece1.flag .generated_files/8a037868bcd381a0152c32f5585b257d4ddd2d8f.flag
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/temperature.o.d 
+	@${RM} ${OBJECTDIR}/temperature.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  temperature.c  -o ${OBJECTDIR}/temperature.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/temperature.o.d"      -g -D__DEBUG     -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
 else
 ${OBJECTDIR}/mcc_generated_files/adc1.o: mcc_generated_files/adc1.c  .generated_files/2dfab71a8e128a1e8b7dc90d2b1aaf75e8fe118e.flag .generated_files/8a037868bcd381a0152c32f5585b257d4ddd2d8f.flag
 	@${MKDIR} "${OBJECTDIR}/mcc_generated_files" 
@@ -227,6 +239,18 @@ ${OBJECTDIR}/io_utils.o: io_utils.c  .generated_files/5eb8426000b59fef049302d061
 	@${RM} ${OBJECTDIR}/io_utils.o.d 
 	@${RM} ${OBJECTDIR}/io_utils.o 
 	${MP_CC} $(MP_EXTRA_CC_PRE)  io_utils.c  -o ${OBJECTDIR}/io_utils.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/io_utils.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/radio.o: radio.c  .generated_files/6f655675e55eae055a3172d53d79dd9c7667203b.flag .generated_files/8a037868bcd381a0152c32f5585b257d4ddd2d8f.flag
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/radio.o.d 
+	@${RM} ${OBJECTDIR}/radio.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  radio.c  -o ${OBJECTDIR}/radio.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/radio.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
+	
+${OBJECTDIR}/temperature.o: temperature.c  .generated_files/6f9a9e9c263a91fabbe6486f3b1d9e6ed1c673ab.flag .generated_files/8a037868bcd381a0152c32f5585b257d4ddd2d8f.flag
+	@${MKDIR} "${OBJECTDIR}" 
+	@${RM} ${OBJECTDIR}/temperature.o.d 
+	@${RM} ${OBJECTDIR}/temperature.o 
+	${MP_CC} $(MP_EXTRA_CC_PRE)  temperature.c  -o ${OBJECTDIR}/temperature.o  -c -mcpu=$(MP_PROCESSOR_OPTION)  -MP -MMD -MF "${OBJECTDIR}/temperature.o.d"        -g -omf=elf -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -O0 -msmart-io=1 -Wall -msfr-warn=off    -mdfp="${DFP_DIR}/xc16"
 	
 endif
 

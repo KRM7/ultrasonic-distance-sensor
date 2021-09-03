@@ -19,6 +19,8 @@
         <itemPath>mcc_generated_files/adc1.h</itemPath>
       </logicalFolder>
       <itemPath>io_utils.h</itemPath>
+      <itemPath>radio.h</itemPath>
+      <itemPath>temperature.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -42,6 +44,8 @@
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>io_utils.c</itemPath>
+      <itemPath>radio.c</itemPath>
+      <itemPath>temperature.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

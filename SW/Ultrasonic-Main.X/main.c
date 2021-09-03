@@ -158,8 +158,8 @@ void IO_InterruptHandler(void)
     RF1_OLD = RF1;
     MEAS_OLD = MEAS;
     
-    if (ECHO)
     //echo signal interrupt _/??
+    if (ECHO_CHANGE && ECHO)
     {
         TMR2 = 58; //offset error correction
         
@@ -173,15 +173,15 @@ void IO_InterruptHandler(void)
     }
     
     //transmit mode radio interrupts
-    else if (radio_mode == MODE_TX)
+    if (radio_mode == MODE_TX)
     {
         //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) ??\_
-        if (!RF0)
+        if (RF0_CHANGE && !RF0)
         {
             //this interrupt is unused
         }
         //TX DONE interrupt (transmission complete) _/??
-        if (RF1)
+        if (RF1_CHANGE && RF1)
         {
             MSG_SENT = true;
             
@@ -193,13 +193,13 @@ void IO_InterruptHandler(void)
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        if (RF0)
         //SYNC or ADDRESS match interrupt (packet incoming) _/??
+        if (RF0_CHANGE && RF0)
         {
             //this interrupt is unused
         }
         //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) _/??
-        if (RF1)
+        if (RF1_CHANGE && RF1)
         {
             MSG_RECEIVED = true;
             //read the answer
@@ -233,8 +233,8 @@ void IO_InterruptHandler(void)
             RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
-    else if (MEAS && device_mode == SINGLE)
     //measure button interrupt _/??
+    if (MEAS_CHANGE && MEAS && device_mode == SINGLE)
     {
         __delay_ms(15); //debounce delay
         

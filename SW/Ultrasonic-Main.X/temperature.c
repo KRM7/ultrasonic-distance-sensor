@@ -13,6 +13,7 @@ uint16_t T_ReadADC(void)
     //select the channel of the temperature sensor
     ADC1_ChannelSelect(TEMP);
     
+    //start AD conversion
     ADC1_SoftwareTriggerEnable();
     __delay_us(1);
     ADC1_SoftwareTriggerDisable();
@@ -35,7 +36,7 @@ float T_ReadTemperature(void)
     
     float Vdiff = Vdd * (float)adc_diff / (float)adc_resolution;
     
-    //10mV ~ 1C
+    //10mV diff ~ 1C diff
     float temperature = 21.0 + 100.0 * Vdiff;
    
     return temperature;

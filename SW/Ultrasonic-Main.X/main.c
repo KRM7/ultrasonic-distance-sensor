@@ -66,8 +66,7 @@ int main(void)
             RF_WriteTransmitFIFO(echo_time >> 8);
             RF_WriteTransmitFIFO(echo_time);
             
-            //send temperature (TODO: send 1 byte only)
-            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
+            //send temperature
             RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
 
             USB_Transfer(&usb_buffers);
@@ -160,21 +159,20 @@ void IO_InterruptHandler(void)
             
             uint8_t cmd_byte1 = RF_ReadReceiveFIFO();
             uint8_t cmd_byte0 = RF_ReadReceiveFIFO();
-            uint8_t temperature_byte1 = RF_ReadReceiveFIFO();
-            uint8_t temperature_byte0 = RF_ReadReceiveFIFO();
+            uint8_t temperature_byte = RF_ReadReceiveFIFO();
             
             //calculate temperature
-            temperature_extern = ConvertU8toI8(temperature_byte1);
+            temperature_extern = ConvertU8toI8(temperature_byte);
             
             //calculate distance in mm
             distance = CalcDistance(echo_time, (float)temperature_main);
 
             //write result to the EEPROM (16bit distance in mm) every 1 sec
-            static bool b = 0;
-            if (b++)
-            {
-                EEPROM_Write16bits(eeprom_address, distance);
-            }
+//            static bool b = 0;
+//            if (b++)
+//            {
+//                EEPROM_Write16bits(eeprom_address, distance);
+//            }
             
             //display results on LCD
             char line1[7], line2[5];

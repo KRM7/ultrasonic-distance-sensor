@@ -34,7 +34,7 @@ volatile int8_t temperature_extern = 0;  //temperature measured by the distant u
 
 //radio mode
 volatile RF_MODE radio_mode;
-#define PACKET_SIZE 4
+#define PACKET_SIZE 3
 
 //functions
 void Init(void);
@@ -56,8 +56,7 @@ int main(void)
             
             RF_WriteTransmitFIFO(0x00);     //cmd byte0
             RF_WriteTransmitFIFO(0x00);     //cmd byte1                 
-            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte0
-            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte1
+            RF_WriteTransmitFIFO(ConvertI8toU8(temperature_extern));    //temperature byte
         }
         
         distance < 250 ? LED_WARN1_SetHigh() : LED_WARN1_SetLow();
@@ -120,11 +119,10 @@ void IO_InterruptHandler(void)
         {
             uint8_t echo_time_high = RF_ReadReceiveFIFO();
             uint8_t echo_time_low = RF_ReadReceiveFIFO();
-            uint8_t temp_high = RF_ReadReceiveFIFO();
-            uint8_t temp_low = RF_ReadReceiveFIFO();
+            uint8_t temp_byte = RF_ReadReceiveFIFO();
             
             //calculate temperature
-            temperature_main = ConvertU8toI8(temp_high);
+            temperature_main = ConvertU8toI8(temp_byte);
             temperature_extern = (int8_t)T_ReadTemperature();
             
             //calculate and display distance in cm

@@ -83,25 +83,23 @@
 #include "pin_manager.h"
 #include "clock.h"
 #include "system.h"
-#include "tmr1.h"
-#include "usb/usb.h"
 #include "spi1.h"
+#include "tmr2.h"
+#include "adc1.h"
+#include "usb/usb.h"
 #include "interrupt_manager.h"
 #include "traps.h"
-#include "adc1.h"
-#include "tmr2.h"
 
 void SYSTEM_Initialize(void)
 {
     PIN_MANAGER_Initialize();
-    INTERRUPT_Initialize();
     CLOCK_Initialize();
+    INTERRUPT_Initialize();
     USBDeviceInit();
     USBDeviceAttach();
     SPI1_Initialize();
     ADC1_Initialize();
     TMR2_Initialize();
-    TMR1_Initialize();
 }
 
 /**

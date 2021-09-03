@@ -49,21 +49,22 @@ volatile bool ECHO_RET = false;
 
 void Init(void);
 void IO_InterruptHandler(void); //handles all IO interrupts
-void T1_InterruptHandler(void); //handles the T1 timer interrupt (distance measurement)
-
+void TriggerPulse(void);
 
 int main(void)
 {
     Init();
 
     while (1)
-    {
+    {     
+        TriggerPulse();
+        __delay_ms(60);
+        
         if (ECHO_RET && echo_time < 40000)
         {
-            temperature_main = (int8_t)T_ReadTemperature();
-            
             //transmit mode
-            RF_SetMode(radio_mode = MODE_TX);
+            radio_mode = MODE_TX;
+            RF_SetMode(MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
             //send time
@@ -72,64 +73,28 @@ int main(void)
             
             //send temperature
             RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
-            
-            __delay_ms(60);
 
-            //USB_Transfer(&usb_buffers);
+            USB_Transfer(&usb_buffers);
+            __delay_ms(450);
         }
         if (MSG_SENT)
         {
             MSG_SENT = false;
             
-            //the measurement data was sent to the distant unit
-            //the radio module needs to be switched to receiver mode to get the answer from the distant unit
             
-            RF_SetMode(radio_mode = MODE_RX);
-            RF_SetFIFOThreshold(PACKET_SIZE - 1);
         }
         if (MSG_RECEIVED)
         {
             MSG_RECEIVED = false;
             
-            //the answer packet from the distant was received and is in the RF module's receive FIFO
-            //the packet contains 2 cmd bytes (currently unused), and the temperature measured by the distant unit (1 byte)
-            //calculate the measured distance (the temperature answer was needed for this)
-            //update the LCD with the new data, and save to EEPROM if needed
             
-            LED_MODE_Toggle();
-            
-            uint8_t cmd_byte1 = RF_ReadReceiveFIFO();
-            uint8_t cmd_byte0 = RF_ReadReceiveFIFO();
-            uint8_t temperature_byte = RF_ReadReceiveFIFO();
-            
-            //calculate temperature
-            temperature_extern = ConvertU8toI8(temperature_byte);
-            
-            //calculate distance in mm
-            distance = CalcDistance(echo_time, (float)temperature_main);
-
-            //write result to the EEPROM (16bit distance in mm) every 1 sec
-            static bool b = 0;
-            if (b++)
-            {
-                //EEPROM_Write16bits(eeprom_address, distance);
-            }
-            
-            //display results on LCD
-            char line1[7], line2[5];
-            DistanceToStr(distance, line1);
-            TemperatureToStr(temperature_main, line2);
-            LCD_WriteStrFrom(LCD_LINE1, 7, line1, sizeof(line1));
-            LCD_WriteStrFrom(LCD_LINE2, 7, line2, sizeof(line2));
-            
-            //set the RF module to standby mode until the next measurement
-            RF_SetMode(radio_mode = MODE_STANDBY);
         }
         if (MEAS_PRESS)
         {
-            MEAS_PRESS = false; 
+            MEAS_PRESS = false;
+            
+            
         }
-        
     }
 
     return 1;
@@ -165,7 +130,6 @@ void Init(void)
     
     //set up the interrupt handlers
     CN_SetInterruptHandler(IO_InterruptHandler);
-    TMR1_SetInterruptHandler(T1_InterruptHandler);
 }
 
 void IO_InterruptHandler(void)
@@ -182,8 +146,13 @@ void IO_InterruptHandler(void)
     //echo signal interrupt
     if (ECHO)
     {
-        echo_time = TMR2_Counter16BitGet(); //time in us
-        TMR2_Stop();
+        TMR2 = 58; //offset error correction
+        
+        while (ECHO_GetValue()); //distance~ECHO_HIGH
+        
+        echo_time = TMR2; //time in us
+        
+        temperature_main = (int8_t)T_ReadTemperature();
         
         ECHO_RET = true;
     }
@@ -200,6 +169,9 @@ void IO_InterruptHandler(void)
         if (RF1)
         {
             MSG_SENT = true;
+            //switch the radio to receiver mode
+            RF_SetMode(radio_mode = MODE_RX);
+            RF_SetFIFOThreshold(PACKET_SIZE - 1);
         }
     }
     //receiver mode radio interrupts
@@ -214,6 +186,35 @@ void IO_InterruptHandler(void)
         if (RF1)
         {
             MSG_RECEIVED = true;
+            //read the answer
+            LED_MODE_Toggle();
+            
+            uint8_t cmd_byte1 = RF_ReadReceiveFIFO();
+            uint8_t cmd_byte0 = RF_ReadReceiveFIFO();
+            uint8_t temperature_byte = RF_ReadReceiveFIFO();
+            
+            //calculate temperature
+            temperature_extern = ConvertU8toI8(temperature_byte);
+            
+            //calculate distance in mm
+            distance = CalcDistance(echo_time, (float)temperature_main);
+
+            //write result to the EEPROM (16bit distance in mm) every 1 sec
+//            static bool b = 0;
+//            if (b++)
+//            {
+//                EEPROM_Write16bits(eeprom_address, distance);
+//            }
+            
+            //display results on LCD
+            char line1[7], line2[5];
+            DistanceToStr(distance, line1);
+            TemperatureToStr(temperature_main, line2);
+            LCD_WriteStrFrom(LCD_LINE1, 7, line1, sizeof(line1));
+            LCD_WriteStrFrom(LCD_LINE2, 7, line2, sizeof(line2));
+            
+            //standby mode until next measurement
+            RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
     //measure button interrupt
@@ -228,13 +229,9 @@ void IO_InterruptHandler(void)
     }
 }
 
-void T1_InterruptHandler(void)
+void TriggerPulse(void)
 {
-    //send a trigger pulse to begin distance measurement
     TRIG_SetHigh();
     __delay_us(10);
     TRIG_SetLow();
-    
-    TMR2_Counter16BitSet(0);
-    TMR2_Start();
 }

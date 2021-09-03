@@ -21,6 +21,7 @@
       <itemPath>io_utils.h</itemPath>
       <itemPath>radio.h</itemPath>
       <itemPath>temperature.h</itemPath>
+      <itemPath>7segment.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -46,6 +47,7 @@
       <itemPath>io_utils.c</itemPath>
       <itemPath>radio.c</itemPath>
       <itemPath>temperature.c</itemPath>
+      <itemPath>7segment.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

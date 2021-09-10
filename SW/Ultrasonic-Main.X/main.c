@@ -72,6 +72,7 @@ int main(void)
             RF_WriteTransmitFIFO(echo_time);
             
             //send temperature
+            temperature_main = (int8_t)T_ReadTemperature();
             RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
 
             USB_Transfer(&usb_buffers);
@@ -95,6 +96,8 @@ int main(void)
             
             
         }
+        
+        return 1;
     }
 
     return 1;
@@ -158,16 +161,13 @@ void IO_InterruptHandler(void)
     RF1_OLD = RF1;
     MEAS_OLD = MEAS;
     
-    //echo signal interrupt _/??
+    //echo signal interrupt (rising edge)
     if (ECHO_CHANGE && ECHO)
     {
         TMR2 = 58; //offset error correction
         
-        while (ECHO_GetValue()); //distance~ECHO_HIGH
-        
-        echo_time = TMR2; //time in us
-        
-        temperature_main = (int8_t)T_ReadTemperature();
+        while (ECHO_GetValue()); //distance ~ ECHO_HIGH time 
+        echo_time = TMR2;        //time in us
         
         ECHO_RET = true;
     }
@@ -175,12 +175,12 @@ void IO_InterruptHandler(void)
     //transmit mode radio interrupts
     if (radio_mode == MODE_TX)
     {
-        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) ??\_
+        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) (falling edge)
         if (RF0_CHANGE && !RF0)
         {
             //this interrupt is unused
         }
-        //TX DONE interrupt (transmission complete) _/??
+        //TX DONE interrupt (transmission complete) (rising edge)
         if (RF1_CHANGE && RF1)
         {
             MSG_SENT = true;
@@ -193,12 +193,12 @@ void IO_InterruptHandler(void)
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt (packet incoming) _/??
+        //SYNC or ADDRESS match interrupt (packet incoming) (rising edge)
         if (RF0_CHANGE && RF0)
         {
             //this interrupt is unused
         }
-        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) _/??
+        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) (rising edge)
         if (RF1_CHANGE && RF1)
         {
             MSG_RECEIVED = true;
@@ -233,7 +233,7 @@ void IO_InterruptHandler(void)
             RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
-    //measure button interrupt _/??
+    //measure button interrupt (rising edge)
     if (MEAS_CHANGE && MEAS && device_mode == SINGLE)
     {
         __delay_ms(15); //debounce delay
@@ -243,6 +243,22 @@ void IO_InterruptHandler(void)
             MEAS_PRESS = true;
         }
     }
+    
+    //read ports
+    porta = PORTA;
+    portb = PORTB;
+    
+    ECHO = porta & 16;
+    RF0 = porta & 1;
+    RF1 = portb & 4;
+    MEAS = portb & 128;
+    
+    ECHO_OLD = ECHO;
+    RF0_OLD = RF0;
+    RF1_OLD = RF1;
+    MEAS_OLD = MEAS;
+    
+    return;
 }
 
 void TriggerPulse(void)

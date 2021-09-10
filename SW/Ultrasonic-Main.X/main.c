@@ -22,82 +22,118 @@ typedef enum {
     SYSTEM = 0b0,
     SINGLE = 0b1
 } DEVICE_MODE;
-volatile DEVICE_MODE device_mode = SYSTEM;
-
-//measurement data
-volatile bool signal_sent = false;
-volatile uint16_t distance = 0;             //measured distance in mm (min 2cm, max 4m)
-volatile uint16_t echo_time = 0;            //echo travel time in us (both ways)
-volatile int8_t temperature_main = 0;       //temperature measured by the main unit (in Celsius)
-volatile int8_t temperature_extern = 0;     //temperature measured by the distant unit (in Celsius)
+DEVICE_MODE device_mode = SYSTEM;  //unused
 
 //radio
-volatile RF_MODE radio_mode;
+RF_MODE radio_mode;
 #define PACKET_SIZE 3
 
 //EEPROM
-volatile uint16_t eeprom_address;
+uint16_t eeprom_address;
 
-//USB
+//USB read and write buffers
 struct USB_BUFFERS usb_buffers;
 
 //flags
+volatile bool SEND_ECHO = true;
+volatile bool ECHO_RET = false;
 volatile bool MSG_SENT = false;
 volatile bool MSG_RECEIVED = false;
 volatile bool MEAS_PRESS = false;
-volatile bool ECHO_RET = false;
+
+volatile uint16_t ECHO_TIME = 0;    //echo travel time in us (both ways)
+
 
 void Init(void);
 void IO_InterruptHandler(void); //handles all IO interrupts
-void TriggerPulse(void);
+void T1_InterruptHandler(void); //handles the periodic measurements
+
 
 int main(void)
 {
     Init();
-
+    
+    int8_t temperature_main = (int8_t)T_ReadTemperature();  //temperature measured by the main unit (in Celsius)
+    int8_t temperature_extern = temperature_main;           //temperature measured by the distant unit (in Celsius)
+    
     while (1)
-    {     
-        TriggerPulse();
-        __delay_ms(60);
-        
-        if (ECHO_RET && echo_time < 40000)
+    {
+        if (SEND_ECHO)
         {
+            SEND_ECHO = false;
+            TMR1_Counter16BitSet(0);
+            
+            TRIG_SetHigh();
+            __delay_us(10);
+            TRIG_SetLow();
+        }
+        
+        if (ECHO_RET && ECHO_TIME < 40000)
+        {
+            ECHO_RET = false;
+            
             //transmit mode
             radio_mode = MODE_TX;
             RF_SetMode(MODE_TX);
             RF_SetFIFOThreshold(PACKET_SIZE - 2);
             
             //send time
-            RF_WriteTransmitFIFO(echo_time >> 8);
-            RF_WriteTransmitFIFO(echo_time);
+            RF_WriteTransmitFIFO(ECHO_TIME >> 8);
+            RF_WriteTransmitFIFO(ECHO_TIME);
             
             //send temperature
             temperature_main = (int8_t)T_ReadTemperature();
             RF_WriteTransmitFIFO(ConvertI8toU8(temperature_main));
-
-            USB_Transfer(&usb_buffers);
-            __delay_ms(450);
         }
         if (MSG_SENT)
         {
             MSG_SENT = false;
             
-            
+            //switch the radio to receiver mode
+            RF_SetMode(radio_mode = MODE_RX);
+            RF_SetFIFOThreshold(PACKET_SIZE - 1);
         }
         if (MSG_RECEIVED)
         {
             MSG_RECEIVED = false;
             
+            //read the answer
+            LED_MODE_Toggle();
             
+            uint8_t cmd_byte1 = RF_ReadReceiveFIFO();
+            uint8_t cmd_byte0 = RF_ReadReceiveFIFO();
+            uint8_t temperature_byte = RF_ReadReceiveFIFO();
+            
+            //calculate temperature
+            temperature_extern = ConvertU8toI8(temperature_byte);
+            
+            //calculate the distance (from the 2-way echo return time) in mm (min 2cm, max 4m)
+            uint16_t distance = CalcDistance(ECHO_TIME, (float)temperature_main);
+
+            //write result to the EEPROM (16bit distance in mm) every 1 sec
+            static bool b = 0;
+            if (b++)
+            {
+                //EEPROM_Write16bits(eeprom_address, distance);
+            }
+            
+            //display results on LCD
+            char line1[7], line2[5];
+            DistanceToStr(distance, line1);
+            TemperatureToStr(temperature_main, line2);
+            LCD_WriteStrFrom(LCD_LINE1, 7, line1, sizeof(line1));
+            LCD_WriteStrFrom(LCD_LINE2, 7, line2, sizeof(line2));
+            
+            //standby mode until next measurement
+            RF_SetMode(radio_mode = MODE_STANDBY);
         }
         if (MEAS_PRESS)
         {
-            MEAS_PRESS = false;
-            
-            
+            MEAS_PRESS = false;   
         }
         
-        return 1;
+        //handle USB communication if necessary
+        USB_Transfer(&usb_buffers);
     }
 
     return 1;
@@ -124,15 +160,12 @@ void Init(void)
     char line2[6] = "Temp: ";
     LCD_WriteStrFrom(LCD_LINE2, 1, line2, sizeof(line2));
     
-    //initialize the temperature values
-    temperature_main = (int8_t)T_ReadTemperature();
-    temperature_extern = temperature_main;
-    
     //initialize the EEPROM
     eeprom_address = EEPROM_Initialize();
     
     //set up the interrupt handlers
     CN_SetInterruptHandler(IO_InterruptHandler);
+    TMR1_SetInterruptHandler(T1_InterruptHandler);
 }
 
 void IO_InterruptHandler(void)
@@ -161,13 +194,15 @@ void IO_InterruptHandler(void)
     RF1_OLD = RF1;
     MEAS_OLD = MEAS;
     
-    //echo signal interrupt (rising edge)
+    //echo signal interrupt (on rising edge)
     if (ECHO_CHANGE && ECHO)
     {
-        TMR2 = 58; //offset error correction
+        //distance measurement offset error correction (in us)
+        //calculated based on measurements, so the mean error will be ~ 0 mm
+        TMR2 = 58;
         
         while (ECHO_GetValue()); //distance ~ ECHO_HIGH time 
-        echo_time = TMR2;        //time in us
+        ECHO_TIME = TMR2;        //time in us
         
         ECHO_RET = true;
     }
@@ -175,65 +210,32 @@ void IO_InterruptHandler(void)
     //transmit mode radio interrupts
     if (radio_mode == MODE_TX)
     {
-        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) (falling edge)
+        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) (on falling edge)
         if (RF0_CHANGE && !RF0)
         {
             //this interrupt is unused
         }
-        //TX DONE interrupt (transmission complete) (rising edge)
+        //TX DONE interrupt (transmission complete) (on rising edge)
         if (RF1_CHANGE && RF1)
         {
             MSG_SENT = true;
-            
-            //switch the radio to receiver mode
-            RF_SetMode(radio_mode = MODE_RX);
-            RF_SetFIFOThreshold(PACKET_SIZE - 1);
         }
     }
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt (packet incoming) (rising edge)
+        //SYNC or ADDRESS match interrupt (packet incoming) (on rising edge)
         if (RF0_CHANGE && RF0)
         {
             //this interrupt is unused
         }
-        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) (rising edge)
+        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) (on rising edge)
         if (RF1_CHANGE && RF1)
         {
             MSG_RECEIVED = true;
-            //read the answer
-            LED_MODE_Toggle();
-            
-            uint8_t cmd_byte1 = RF_ReadReceiveFIFO();
-            uint8_t cmd_byte0 = RF_ReadReceiveFIFO();
-            uint8_t temperature_byte = RF_ReadReceiveFIFO();
-            
-            //calculate temperature
-            temperature_extern = ConvertU8toI8(temperature_byte);
-            
-            //calculate distance in mm
-            distance = CalcDistance(echo_time, (float)temperature_main);
-
-            //write result to the EEPROM (16bit distance in mm) every 1 sec
-            static bool b = 0;
-            if (b++)
-            {
-                //EEPROM_Write16bits(eeprom_address, distance);
-            }
-            
-            //display results on LCD
-            char line1[7], line2[5];
-            DistanceToStr(distance, line1);
-            TemperatureToStr(temperature_main, line2);
-            LCD_WriteStrFrom(LCD_LINE1, 7, line1, sizeof(line1));
-            LCD_WriteStrFrom(LCD_LINE2, 7, line2, sizeof(line2));
-            
-            //standby mode until next measurement
-            RF_SetMode(radio_mode = MODE_STANDBY);   
         }
     }
-    //measure button interrupt (rising edge)
+    //measure button interrupt (on rising edge)
     if (MEAS_CHANGE && MEAS && device_mode == SINGLE)
     {
         __delay_ms(15); //debounce delay
@@ -244,26 +246,14 @@ void IO_InterruptHandler(void)
         }
     }
     
-    //read ports
-    porta = PORTA;
-    portb = PORTB;
-    
-    ECHO = porta & 16;
-    RF0 = porta & 1;
-    RF1 = portb & 4;
-    MEAS = portb & 128;
-    
-    ECHO_OLD = ECHO;
-    RF0_OLD = RF0;
-    RF1_OLD = RF1;
-    MEAS_OLD = MEAS;
-    
-    return;
+    //read ports again    
+    ECHO_OLD = PORTA & 16;
+    RF0_OLD = PORTA & 1;
+    RF1_OLD = PORTB & 4;
+    MEAS_OLD = PORTB & 128;
 }
 
-void TriggerPulse(void)
+void T1_InterruptHandler(void)
 {
-    TRIG_SetHigh();
-    __delay_us(10);
-    TRIG_SetLow();
+    SEND_ECHO = true;
 }

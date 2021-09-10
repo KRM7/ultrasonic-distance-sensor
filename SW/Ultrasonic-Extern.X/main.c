@@ -137,20 +137,28 @@ void IO_InterruptHandler(void)
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;
     
+    static bool RF0_OLD = 0;
+    static bool RF1_OLD = 0;
+    static bool SW_OLD = 0;
+    
     bool RF0 = portb & 16;  //RB14
     bool RF1 = portb & 8;   //RB3
     bool SW = porta & 4;    //RA2
     
+    bool RF0_CHANGE = RF0_OLD ^ RF0;
+    bool RF1_CHANGE = RF1_OLD ^ RF1;
+    bool SW_CHANGE = SW_OLD ^ SW;
+    
     //transmit mode radio interrupts
     if (radio_mode == MODE_TX)
     {
-        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) ??\_
-        if (RF0)
+        //FIFO = FIFO_THRESHOLD reached interrupt (packet ready to transmit) (on falling edge)
+        if (RF0_CHANGE && !RF0)
         {
             //this interrupt is unused
         }
-        //TX DONE interrupt (transmission complete) _/??
-        if (RF1)
+        //TX DONE interrupt (transmission complete) (on rising edge)
+        if (RF1_CHANGE && RF1)
         {
             MSG_SENT = true;
         }
@@ -158,19 +166,19 @@ void IO_InterruptHandler(void)
     //receiver mode radio interrupts
     else if (radio_mode == MODE_RX)
     {
-        //SYNC or ADDRESS match interrupt (packet incoming) _/??
-        if (RF0)
+        //SYNC or ADDRESS match interrupt (packet incoming) (on rising edge)
+        if (RF0_CHANGE && RF0)
         {
             //this interrupt is unused.
         }
-        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) _/??
-        if (RF1)
+        //FIFO = FIFO_THRESHOLD reached interrupt (full packet received) (on rising edge)
+        if (RF1_CHANGE && RF1)
         {
             MSG_RECEIVED = true;
         }
     }  
-    //MODE button pressed interrupt _/??
-    else if (SW)
+    //MODE button pressed interrupt (on rising edge)
+    if (SW_CHANGE && SW)
     {
         __delay_ms(15);  //debounce delay
         
@@ -179,6 +187,11 @@ void IO_InterruptHandler(void)
             MODE_PRESS = true;
         }
     }
+    
+    //read ports again   
+    RF0_OLD = PORTB & 16;  //RB14
+    RF1_OLD = PORTB & 8;   //RB3
+    SW_OLD = PORTA & 4;    //RA2
 }
 
 void T1_InterruptHandler(void)

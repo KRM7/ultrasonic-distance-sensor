@@ -51,12 +51,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "spi1.h"
-#include "tmr2.h"
-#include "adc1.h"
-#include "usb/usb.h"
 #include "interrupt_manager.h"
 #include "traps.h"
+#include "spi1.h"
+#include "adc1.h"
+#include "tmr1.h"
+#include "tmr2.h"
+#include "usb/usb.h"
 
 #warning "This file will be removed in future MCC releases. Use system.h instead."
 

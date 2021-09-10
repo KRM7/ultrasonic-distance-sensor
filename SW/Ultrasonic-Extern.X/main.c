@@ -25,16 +25,15 @@ struct SevenSegment display;
 RF_MODE radio_mode;
 #define PACKET_SIZE 3
 
-
 //flags
 volatile bool MSG_RECEIVED = false;
 volatile bool MSG_SENT = false;
 volatile bool MODE_PRESS = false;
 
-
 void Init(void);
-void IO_InterruptHandler(void); //IO interrupt handler
+void IO_InterruptHandler(void); //IO interrupt handler (this handles every IO pin interrupt)
 void T1_InterruptHandler(void); //handles the 7 segment display
+
 
 int main(void)
 {
@@ -134,7 +133,8 @@ void Init(void)
     TMR1_SetInterruptHandler(T1_InterruptHandler);
 }
 
-void IO_InterruptHandler(void) {
+void IO_InterruptHandler(void)
+{
     //read input ports and determine what triggered the interrupt
     uint16_t porta = PORTA;
     uint16_t portb = PORTB;
@@ -144,8 +144,8 @@ void IO_InterruptHandler(void) {
     static bool button_old = 0;
 
     bool radio0 = portb & 16; //RB14
-    bool radio1 = portb & 8; //RB3
-    bool button = porta & 4; //RA2
+    bool radio1 = portb & 8;  //RB3
+    bool button = porta & 4;  //RA2
 
     bool radio0_changed = radio0_old ^ radio0;
     bool radio1_changed = radio1_old ^ radio1;

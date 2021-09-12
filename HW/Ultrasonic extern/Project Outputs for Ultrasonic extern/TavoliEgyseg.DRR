@@ -1,0 +1,22 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: TavoliEgyseg.PcbDoc   2020-12-17  11:13:56
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : TavoliEgyseg.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      24mil (0.6mm)                                             Round             9         PTH        0.00inch (0.00mm)
+T2      26mil (0.65mm)                                            Round             12        PTH        0.00inch (0.00mm)
+T3      28mil (0.7mm)                                             Round             7         PTH        0.00inch (0.00mm)
+T4      32mil (0.8mm)                                             Round             14        PTH        0.00inch (0.00mm)
+T5      35mil (0.9mm)                                             Round             28        PTH        0.00inch (0.00mm)
+T6      39mil (1mm)                                               Round             10        PTH        0.00inch (0.00mm)
+T7      43mil (1.1mm)                                             Round             13        PTH        0.00inch (0.00mm)
+T8      45mil (1.15mm)                                            Round             2         PTH        0.00inch (0.00mm)
+T9      126mil (3.2mm)                                            Round             1         NPTH       0.00inch (0.00mm)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              96
+
+Total Processing Time (hh:mm:ss) : 00:00:00
